@@ -1,7 +1,7 @@
 import argparse
 import sys
 import json
-from ortools.linear_solver import pywraplp
+from gurobipy import *
 from nldkss_pool import *
 from optimality_criteria import *
 import pool_reader
@@ -25,37 +25,32 @@ class PoolOptimiser(object):
                 # If donor has more than one patient, it will need a constraint
                 pd_pair.donor.mip_vars.append(mip_var)
 
-    def _optimise(self, s, opt_criterion):
-        z = s.Sum(
+    def _optimise(self, model, opt_criterion):
+        z = quicksum(
             [chain.mip_var*opt_criterion.chain_val(chain) for chain in self.chains] +
             [cycle.mip_var*opt_criterion.cycle_val(cycle) for cycle in self.cycles] +
             [altruist.mip_var*opt_criterion.altruist_val(altruist)
                         for altruist in self.pool.altruists])
             
-        if opt_criterion.sense=='MAX':
-            s.Maximize(z)
-        else:
-            s.Minimize(z)
+        model.setObjective(z)
+        model.modelSense = GRB.MAXIMIZE if opt_criterion.sense=='MAX' else GRB.MINIMIZE
+        model.optimize()
 
-        solve_status = s.Solve()
+        return z, model.status
 
-        return z, solve_status
-
-    def _create_solver(self):
-        return pywraplp.Solver('CoinsGridCLP',
-                                 pywraplp.Solver.CBC_MIXED_INTEGER_PROGRAMMING)
-
-    def _create_vars_and_constraints(self, s, patients, paired_donors, altruists):
+    def _create_vars_and_constraints(self, model, patients, paired_donors, altruists):
         for person in patients + paired_donors + altruists:
             person.mip_vars = []
         
         for chain in self.chains:
-            chain.mip_var = s.IntVar(0, 1, 'chain' + str(chain.index))
+            chain.mip_var = model.addVar(vtype=GRB.BINARY, name='chain' + str(chain.index))
         for cycle in self.cycles:
-            cycle.mip_var = s.IntVar(0, 1, 'cycle' + str(cycle.index))
+            cycle.mip_var = model.addVar(vtype=GRB.BINARY, name='cycle' + str(cycle.index))
         for altruist in altruists:
-            altruist.mip_var = s.IntVar(0, 1, 'altruist' + str(altruist.nhs_id))
+            altruist.mip_var = model.addVar(vtype=GRB.BINARY, name='altruist' + str(altruist.nhs_id))
             altruist.mip_vars.append(altruist.mip_var)
+
+        model.update()
 
         for chain in self.chains:
             chain.altruist_edge.altruist.mip_vars.append(chain.mip_var)
@@ -64,47 +59,48 @@ class PoolOptimiser(object):
             self._add_var_to_patients_and_donors(cycle.pd_pairs, cycle.mip_var)
 
         for person in patients + paired_donors:
-            s.Add(s.Sum(person.mip_vars) <= 1)
+            model.addConstr(quicksum(person.mip_vars) <= 1)
 
         for altruist in altruists:
-            s.Add(s.Sum(altruist.mip_vars) == 1)
+            model.addConstr(quicksum(altruist.mip_vars) == 1)
 
-    def _enforce_objective(self, s, z, obj_val, sense):
+    def _enforce_objective(self, model, z, obj_val, sense):
         if sense=='MAX':
-            s.Add(z >= obj_val)
+            model.addConstr(z >= obj_val)
         else:
-            s.Add(z <= obj_val)
+            model.addConstr(z <= obj_val)
 
     def _items_in_optimal_solution(self, items):
-        return [item for item in items if item.mip_var.SolutionValue() > 0.5]
+        return [item for item in items if item.mip_var.X > 0.5]
 
     def solve(self, max_solutions):
         patients = self.pool.patients
         paired_donors = self.pool.paired_donors
         altruists = self.pool.altruists
 
-        s = self._create_solver()
+        model = Model()
+        model.setParam('OutputFlag', False)
 
-        self._create_vars_and_constraints(s, patients, paired_donors, altruists)
+        self._create_vars_and_constraints(model, patients, paired_donors, altruists)
 
         for opt_criterion in opt_criteria[:-1]:
-            z, status = self._optimise(s, opt_criterion)
-            if status != s.OPTIMAL:
+            z, status = self._optimise(model, opt_criterion)
+            if status != GRB.status.OPTIMAL:
                 raise OptimisationException("Solver status was " + str(solve_status))
-            self._enforce_objective(s, z, s.Objective().Value(), opt_criterion.sense)
+            self._enforce_objective(model, z, model.objVal, opt_criterion.sense)
         
         n_solutions = 0
         best_objval_found = -1
         while True:
-            z, solve_status = self._optimise(s, opt_criteria[-1])
+            z, solve_status = self._optimise(model, opt_criteria[-1])
 
-            if solve_status == s.INFEASIBLE:
+            if solve_status==GRB.status.INF_OR_UNBD or solve_status==GRB.status.INFEASIBLE:
                 break
 
-            if solve_status != s.OPTIMAL:
+            if solve_status != GRB.status.OPTIMAL:
                 raise OptimisationException("Solver status was " + str(solve_status))
 
-            objval = s.Objective().Value()
+            objval = model.objVal
             if objval+self.EPSILON < best_objval_found:
                 break
 
@@ -128,7 +124,7 @@ class PoolOptimiser(object):
                 break
 
             # Ensure that this optimal set of cycles, chains and unused altruists isn't re-found
-            s.Add(s.Sum(optimal_vars) <= len(optimal_vars)-1)
+            model.addConstr(quicksum(optimal_vars) <= len(optimal_vars)-1)
 
         return best_objval_found, n_solutions, False
 
