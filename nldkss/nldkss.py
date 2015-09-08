@@ -92,7 +92,6 @@ class PoolOptimiser(object):
             if status != s.OPTIMAL:
                 raise OptimisationException("Solver status was " + str(solve_status))
             self._enforce_objective(s, z, s.Objective().Value(), opt_criterion.sense)
-
         
         n_solutions = 0
         best_objval_found = -1
@@ -128,7 +127,6 @@ class PoolOptimiser(object):
             # Ensure that this optimal set of cycles, chains and unused altruists isn't re-found
             s.Add(s.Sum(optimal_vars) <= len(optimal_vars)-1)
 
-
         return best_objval_found, n_solutions, False
 
 if __name__=="__main__":
@@ -156,9 +154,12 @@ if __name__=="__main__":
 
     opt_criteria = get_criteria(args.criteria)
 
-    with open(args.file) as json_file:
-        pool = pool_reader.read(json.load(json_file)["data"])
-        pool_optimiser = PoolOptimiser(pool, opt_criteria, args.cycle, args.chain)
-        objval, n_solutions, reached_max = pool_optimiser.solve(args.max)
-        print "Objective value: {} Number of solutions: {} Reached limit: {}".format(
-                objval, n_solutions, "TRUE" if reached_max else "FALSE")
+    if args.file.endswith(".json"):
+        with open(args.file) as json_file:
+            pool = pool_reader.read(json.load(json_file)["data"])
+            pool_optimiser = PoolOptimiser(pool, opt_criteria, args.cycle, args.chain)
+            objval, n_solutions, reached_max = pool_optimiser.solve(args.max)
+            print "Objective value: {} Number of solutions: {} Reached limit: {}".format(
+                    objval, n_solutions, "TRUE" if reached_max else "FALSE")
+    else:
+        print "Input file must be in JSON format"
