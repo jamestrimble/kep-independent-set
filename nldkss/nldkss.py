@@ -98,6 +98,9 @@ class PoolOptimiser(object):
         while True:
             z, solve_status = self._optimise(s, opt_criteria[-1])
 
+            if solve_status == s.INFEASIBLE:
+                break
+
             if solve_status != s.OPTIMAL:
                 raise OptimisationException("Solver status was " + str(solve_status))
 
