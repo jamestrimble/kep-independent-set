@@ -1,7 +1,7 @@
 # kep-hierarchical
 
 This program aims to re-implement the hierarchical model for kidney-exchange
-optimisation in _Paired and Altruistic
+optimisation described in _Paired and Altruistic
 Kidney Donation in the UK: Algorithms and Experimentation_. David Manlove
 and Gregg O'Malley. J. Exp. Algorithmics 19, Article 2.6 (January 2015)
 [Link](http://dl.acm.org/citation.cfm?doid=2627368.2670129).
