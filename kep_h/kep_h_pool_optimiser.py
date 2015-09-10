@@ -79,12 +79,15 @@ class PoolOptimiser(object):
 
         self._create_vars_and_constraints(model, patients, paired_donors, altruists)
 
+        # First, get the optimal values for all optimality criteria but the
+        # last, and enforce that these values must hold.
         for opt_criterion in self.opt_criteria[:-1]:
             z, status = self._optimise(model, opt_criterion)
             if status != GRB.status.OPTIMAL:
                 raise OptimisationException("Solver status was " + str(solve_status))
             self._enforce_objective(model, z, model.objVal, opt_criterion.sense)
         
+        # Find all the optimal solutions
         n_solutions = 0
         best_objval_found = -1
         while True:
@@ -92,8 +95,9 @@ class PoolOptimiser(object):
 
             if solve_status==GRB.status.INF_OR_UNBD or solve_status==GRB.status.INFEASIBLE:
                 break
-
             if solve_status != GRB.status.OPTIMAL:
+                # If the solve status is something else, assume that something
+                # went wrong
                 raise OptimisationException("Solver status was " + str(solve_status))
 
             objval = model.objVal
@@ -106,7 +110,7 @@ class PoolOptimiser(object):
             optimal_vars = [o.mip_var for o in
                             optimal_chains + optimal_cycles + optimal_altruists]
 
-            best_objval_found = objval
+            best_objval_found = max(objval, best_objval_found)
 
             n_solutions += 1
             
