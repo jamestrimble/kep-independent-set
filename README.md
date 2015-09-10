@@ -9,6 +9,12 @@ and Gregg O'Malley. J. Exp. Algorithmics 19, Article 2.6 (January 2015)
 *Please note that the program in this repository is at an early stage of
 development and is intented for experimental work only.*
 
+## Requirements
+
+- Python 2.7
+- Gurobi, which is available under a free academic licence. After installing
+  Gurobi, follow [these instructions](http://www.gurobi.com/documentation/6.0/quickstart_windows/py_building_and_running_th.html) to set up the Python interface.
+
 ## Objective criteria
 
 Currently, the five objective criteria used in the UK National Living
