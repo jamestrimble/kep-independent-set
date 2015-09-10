@@ -1,5 +1,5 @@
 from abc import ABCMeta, abstractmethod
-from nldkss import OptimisationException
+from kep_h import OptimisationException
 
 def get_criteria(s):
     names = s.split(":")

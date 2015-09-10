@@ -1,5 +1,5 @@
 from nose.tools import *
-import nldkss
+import kep_h
 
 def setup():
     pass

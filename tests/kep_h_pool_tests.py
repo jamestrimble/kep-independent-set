@@ -1,5 +1,5 @@
 from nose.tools import *
-from nldkss.nldkss_pool import *
+from kep_h.kep_h_pool import *
 
 def setup():
     pass
