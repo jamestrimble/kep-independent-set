@@ -25,7 +25,7 @@ class PoolOptimiser(object):
         for oc in self.opt_criteria:
             val <<= 10
             if oc.sense == 'MAX':
-                val += min(1023, int(oc.chain_val(chain)))
+                val += min(10, int(oc.chain_val(chain)))
             else:
                 val += 1023 - int(oc.chain_val(chain))
         return val
@@ -35,7 +35,7 @@ class PoolOptimiser(object):
         for oc in self.opt_criteria:
             val <<= 10
             if oc.sense == 'MAX':
-                val += min(1023, int(oc.cycle_val(cycle)))
+                val += min(10, int(oc.cycle_val(cycle)))
             else:
                 val += 1023 - int(oc.cycle_val(cycle))
         return val
@@ -45,7 +45,7 @@ class PoolOptimiser(object):
         for oc in self.opt_criteria:
             val <<= 10
             if oc.sense == 'MAX':
-                val += min(1023, int(oc.altruist_val(ndd)))
+                val += min(10, int(oc.altruist_val(ndd)))
             else:
                 val += 1023 - int(oc.altruist_val(ndd))
         return val
