@@ -1,5 +1,3 @@
-from gurobipy import *
-
 class OptimisationException(Exception):
     pass
 
@@ -11,62 +9,6 @@ class PoolOptimiser(object):
         self.pool = pool
         self.cycles = pool.find_cycles(max_cycle)
         self.chains = pool.find_chains(max_chain)
-
-    def _add_var_to_patients_and_donors(self, pd_pairs, mip_var):
-        for pd_pair in pd_pairs:
-            pd_pair.patient.mip_vars.append(mip_var)
-            if len(pd_pair.donor.paired_patients) > 1:
-                # If donor has more than one patient, it will need a constraint
-                pd_pair.donor.mip_vars.append(mip_var)
-
-    def _optimise(self, model, opt_criterion):
-        z = quicksum(
-            [chain.mip_var*opt_criterion.chain_val(chain) for chain in self.chains] +
-            [cycle.mip_var*opt_criterion.cycle_val(cycle) for cycle in self.cycles] +
-            [altruist.mip_var*opt_criterion.altruist_val(altruist)
-                        for altruist in self.pool.altruists])
-            
-        model.setObjective(z)
-        model.modelSense = GRB.MAXIMIZE if opt_criterion.sense=='MAX' else GRB.MINIMIZE
-        model.optimize()
-
-        return z, model.status
-
-    def _create_vars_and_constraints(self, model, patients, paired_donors, altruists):
-        for person in patients + paired_donors + altruists:
-            person.mip_vars = []
-        
-        for chain in self.chains:
-            chain.mip_var = model.addVar(vtype=GRB.BINARY, name='chain' + str(chain.index))
-        for cycle in self.cycles:
-            cycle.mip_var = model.addVar(vtype=GRB.BINARY, name='cycle' + str(cycle.index))
-        for altruist in altruists:
-            altruist.mip_var = model.addVar(
-                    vtype=GRB.BINARY, name='altruist' + str(altruist.nhs_id))
-            altruist.mip_vars.append(altruist.mip_var)
-
-        model.update()
-
-        for chain in self.chains:
-            chain.altruist_edge.altruist.mip_vars.append(chain.mip_var)
-            self._add_var_to_patients_and_donors(chain.pd_pairs, chain.mip_var)
-        for cycle in self.cycles:
-            self._add_var_to_patients_and_donors(cycle.pd_pairs, cycle.mip_var)
-
-        for person in patients + paired_donors:
-            model.addConstr(quicksum(person.mip_vars) <= 1)
-
-        for altruist in altruists:
-            model.addConstr(quicksum(altruist.mip_vars) == 1)
-
-    def _enforce_objective(self, model, z, obj_val, sense):
-        if sense=='MAX':
-            model.addConstr(z >= obj_val)
-        else:
-            model.addConstr(z <= obj_val)
-
-    def _items_in_optimal_solution(self, items):
-        return [item for item in items if item.mip_var.X > 0.5]
 
     def add_clique(self, adj_mat, node_ids):
         for i in range(len(node_ids) - 1):
