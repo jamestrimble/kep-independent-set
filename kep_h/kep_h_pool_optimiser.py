@@ -174,65 +174,14 @@ class PoolOptimiser(object):
         for row in adj_mat:
             print " ".join("X" if x else "." for x in row)
 
+        for i in range(num_nodes-1):
+            for j in range(i+1, num_nodes):
+                edge_exists = adj_mat[i][j]
+                if invert_edges:
+                    edge_exists = not edge_exists
+                if edge_exists:
+                    print "e", i+1, j+1
+
         for i, score in enumerate(hier_scores):
             print "n", i+1, score
-
-        sys.exit(1)
-
-        model = Model()
-        model.setParam('MIPGap', 0)
-        model.setParam('OutputFlag', False)
-
-        self._create_vars_and_constraints(model, patients, paired_donors, altruists)
-
-        # First, get the optimal values for all optimality criteria but the
-        # last, and enforce that these values must hold.
-        for opt_criterion in self.opt_criteria[:-1]:
-            z, status = self._optimise(model, opt_criterion)
-            if status != GRB.status.OPTIMAL:
-                raise OptimisationException("Solver status was " + str(solve_status))
-            self._enforce_objective(model, z, model.objVal, opt_criterion.sense)
-        
-        # Find all the optimal solutions
-        n_solutions = 0
-        best_objval_found = -1
-        while True:
-            z, solve_status = self._optimise(model, self.opt_criteria[-1])
-
-            if solve_status==GRB.status.INF_OR_UNBD or solve_status==GRB.status.INFEASIBLE:
-                break
-            if solve_status != GRB.status.OPTIMAL:
-                # If the solve status is something else, assume that something
-                # went wrong
-                raise OptimisationException("Solver status was " + str(solve_status))
-
-            objval = model.objVal
-            if objval+self.EPSILON < best_objval_found:
-                break
-
-            optimal_chains = self._items_in_optimal_solution(self.chains)
-            optimal_cycles = self._items_in_optimal_solution(self.cycles)
-            optimal_altruists = self._items_in_optimal_solution(altruists)
-            optimal_vars = [o.mip_var for o in
-                            optimal_chains + optimal_cycles + optimal_altruists]
-
-            best_objval_found = max(objval, best_objval_found)
-
-            n_solutions += 1
-            
-            for item in optimal_chains + optimal_cycles + optimal_altruists:
-                print str(item)
-            print
-
-            if n_solutions==max_solutions:
-                return best_objval_found, n_solutions, True
-
-            if len(optimal_vars)==0:
-                break
-
-            # Ensure that this optimal set of cycles,
-            # chains and unused altruists isn't re-found
-            model.addConstr(quicksum(optimal_vars) <= len(optimal_vars)-1)
-
-        return best_objval_found, n_solutions, False
 
