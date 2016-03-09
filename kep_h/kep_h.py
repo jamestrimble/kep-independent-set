@@ -27,6 +27,9 @@ if __name__=="__main__":
                         help="Stop after finding this number of solutions",
                         type=int,
                         default=100) 
+    parser.add_argument("-i", "--invert-edges",
+                        help="Create complement graph",
+                        action='store_true') 
     args = parser.parse_args()
 
     opt_criteria = get_criteria(args.criteria)
@@ -35,7 +38,7 @@ if __name__=="__main__":
         with open(args.file) as json_file:
             pool = pool_reader.read(json.load(json_file)["data"])
             pool_optimiser = PoolOptimiser(pool, opt_criteria, args.cycle, args.chain)
-            objval, n_solutions, reached_max = pool_optimiser.solve(args.max)
+            objval, n_solutions, reached_max = pool_optimiser.solve(args.max, args.invert_edges)
             print "Objective value: {} Number of solutions: {} Reached limit: {}".format(
                     objval, n_solutions, "TRUE" if reached_max else "FALSE")
     else:
