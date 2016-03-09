@@ -1,7 +1,5 @@
 from gurobipy import *
 
-import sys
-
 class OptimisationException(Exception):
     pass
 
@@ -83,13 +81,9 @@ class PoolOptimiser(object):
         for oc in self.opt_criteria:
             val <<= 10
             if oc.sense == 'MAX':
-                print 'MAX'
                 val += min(1023, int(oc.chain_val(chain)))
             else:
-                print 'MIN'
                 val += 1023 - int(oc.chain_val(chain))
-            print val
-        print
         return val
 
     def calc_hier_cycle_score(self, cycle):
@@ -97,13 +91,9 @@ class PoolOptimiser(object):
         for oc in self.opt_criteria:
             val <<= 10
             if oc.sense == 'MAX':
-                print 'MAX'
                 val += min(1023, int(oc.cycle_val(cycle)))
             else:
-                print 'MIN'
                 val += 1023 - int(oc.cycle_val(cycle))
-            print val
-        print
         return val
 
     def calc_hier_ndd_score(self, ndd):
@@ -111,13 +101,9 @@ class PoolOptimiser(object):
         for oc in self.opt_criteria:
             val <<= 10
             if oc.sense == 'MAX':
-                print 'MAX'
                 val += min(1023, int(oc.altruist_val(ndd)))
             else:
-                print 'MIN'
                 val += 1023 - int(oc.altruist_val(ndd))
-            print val
-        print
         return val
 
     def solve(self, max_solutions, invert_edges):
@@ -125,16 +111,16 @@ class PoolOptimiser(object):
         paired_donors = self.pool.paired_donors
         altruists = self.pool.altruists
 
-        for c in self.cycles:
-            print c.index, "   ", " ".join(str(pdp.patient.index) for pdp in c.pd_pairs)
+#        for c in self.cycles:
+#            print c.index, "   ", " ".join(str(pdp.patient.index) for pdp in c.pd_pairs)
 
         chain_node_ids = range(len(self.chains))
         cycle_node_ids = [len(chain_node_ids) + i for i in range(len(self.cycles))]
         unused_ndd_node_ids = [len(chain_node_ids) + len(cycle_node_ids) + i for i in range(len(altruists))]
         num_nodes = len(chain_node_ids) + len(cycle_node_ids) + len(unused_ndd_node_ids)
-        print chain_node_ids
-        print cycle_node_ids
-        print unused_ndd_node_ids
+        #print chain_node_ids
+        #print cycle_node_ids
+        #print unused_ndd_node_ids
 
         # We'll use "node" to denote a vertex in our MWIS instance
         # Nodes have zero-based indices, but we'll print them out using 1-based indexing
@@ -168,11 +154,10 @@ class PoolOptimiser(object):
         
         for d in [patient_to_nodes, paired_donor_to_node, ndd_to_node]:
             for key, val in d.iteritems():
-                print val
                 self.add_clique(adj_mat, val)
 
-        for row in adj_mat:
-            print " ".join("X" if x else "." for x in row)
+#        for row in adj_mat:
+#            print " ".join("X" if x else "." for x in row)
 
         for i in range(num_nodes-1):
             for j in range(i+1, num_nodes):
