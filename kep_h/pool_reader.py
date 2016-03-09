@@ -52,8 +52,9 @@ def create_pairings_and_edges(data, pool):
         
         elif int(id) in id_to_altruist:
             altruist = id_to_altruist[int(id)]
-            for match in data[id]["matches"]:
-                patient = id_to_patient[match["recipient"]]
-                score = match["score"]
-                altruist.edges.append(AltruistEdge(altruist, patient, score))
+            if "matches" in data[id]:
+                for match in data[id]["matches"]:
+                    patient = id_to_patient[match["recipient"]]
+                    score = match["score"]
+                    altruist.edges.append(AltruistEdge(altruist, patient, score))
 
