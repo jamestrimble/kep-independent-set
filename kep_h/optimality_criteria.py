@@ -15,6 +15,7 @@ def get_criterion(name):
     if name=="backarc":   return MaxBackarcs()
     if name=="weight":    return MaxWeight()
     if name=="3way":      return MinThreeWay()
+    if name=="inverse3way":      return MaxInverseThreeWay()
     raise OptimisationException(
             "Unrecognised optimality criterion: {}".format(name))
 
@@ -83,6 +84,19 @@ class MinThreeWay(OptCriterion):
 
     def altruist_val(self, altruist):
         return 0
+
+class MaxInverseThreeWay(OptCriterion):
+    # Maximise the number of unused NDDs plus twice the number of pairwise exchanges
+    sense = 'MAX'
+
+    def chain_val(self, chain):
+        return (chain.n_transplants() == 2) * 2
+
+    def cycle_val(self, cycle):
+        return (cycle.n_transplants() == 2) * 2
+
+    def altruist_val(self, altruist):
+        return 1
 
 class MaxWeight(OptCriterion):
     sense = 'MAX'
