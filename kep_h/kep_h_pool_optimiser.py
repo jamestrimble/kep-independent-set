@@ -1,3 +1,5 @@
+import sys
+
 class OptimisationException(Exception):
     pass
 
@@ -75,20 +77,31 @@ class PoolOptimiser(object):
         # into a single int
         hier_scores = [0] * num_nodes
 
+        print "c Chains"
         for c, node_id in zip(self.chains, chain_node_ids):
+            sys.stdout.write("c {} ".format(node_id+1)) 
+            sys.stdout.write("{}  ".format(c.altruist_edge.altruist.nhs_id))
             for pd_pair in c.pd_pairs:
+                sys.stdout.write("({},{}) ".format(pd_pair.patient.nhs_id, pd_pair.donor.nhs_id))
                 patient_to_nodes[pd_pair.patient].append(node_id)
                 paired_donor_to_node[pd_pair.donor].append(node_id)
             ndd_to_node[c.altruist_edge.altruist].append(node_id)
             hier_scores[node_id] = self.calc_hier_chain_score(c)
+            sys.stdout.write("\n") 
 
+        print "c Cycles"
         for c, node_id in zip(self.cycles, cycle_node_ids):
+            sys.stdout.write("c {} ".format(node_id+1))
             for pd_pair in c.pd_pairs:
+                sys.stdout.write("({},{}) ".format(pd_pair.patient.nhs_id, pd_pair.donor.nhs_id))
                 patient_to_nodes[pd_pair.patient].append(node_id)
                 paired_donor_to_node[pd_pair.donor].append(node_id)
             hier_scores[node_id] = self.calc_hier_cycle_score(c)
+            sys.stdout.write("\n") 
 
+        print "c Unused altruists"
         for ndd, node_id in zip(altruists, unused_ndd_node_ids):
+            print "c {} ".format(node_id+1)
             ndd_to_node[ndd].append(node_id)
             hier_scores[node_id] = self.calc_hier_ndd_score(ndd)
 
@@ -98,8 +111,12 @@ class PoolOptimiser(object):
             for key, val in d.iteritems():
                 self.add_clique(adj_mat, val)
 
-#        for row in adj_mat:
-#            print " ".join("X" if x else "." for x in row)
+        print "c Adjacency matrix"
+        print "c " + " ".join(str(i) for i in range(1, num_nodes+1))
+        for row in adj_mat:
+            print "c " + " ".join("X" if x else "." for x in row)
+
+        print "p edge {} {}".format(num_nodes, sum(sum(row) for row in adj_mat) / 2)
 
         for i in range(num_nodes-1):
             for j in range(i+1, num_nodes):
