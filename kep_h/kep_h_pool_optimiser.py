@@ -164,7 +164,11 @@ class PoolOptimiser(object):
         for i, desc in enumerate(descriptions):
             print "c {} {}".format(i+1, desc)
 
-        print "p edge {} {}".format(num_nodes, sum(sum(row) for row in adj_mat) / 2)
+        if invert_edges:
+            print "p edge {} {}".format(num_nodes,
+                sum(sum(not b for b in row) for row in adj_mat) / 2)
+        else:
+            print "p edge {} {}".format(num_nodes, sum(sum(row) for row in adj_mat) / 2)
 
         for i in range(num_nodes-1):
             for j in range(i+1, num_nodes):
