@@ -92,7 +92,8 @@ class PoolOptimiser(object):
         return len(nodes_to_keep), reduced_hier_scores, reduced_adj_mat, reduced_descriptions
 
     def solve(self, invert_edges, reduce_nodes, node_order):
-        # param node_order: 0=unchanged, 1=random, 2=?
+        # param node_order: 0=default, 1=random, 2=score ascending, 3=score descending
+        #                   4=degree asc., 5=degree desc.
         
         patients = self.pool.patients
         paired_donors = self.pool.paired_donors
@@ -159,9 +160,18 @@ class PoolOptimiser(object):
                 num_nodes, hier_scores, adj_mat, descriptions = self.reduce_instance(
                         adj_mat, hier_scores, descriptions)
                 
-        if node_order == 1:
-            order = range(num_nodes)
-            random.shuffle(order)
+        if node_order in [1, 2, 3, 4, 5]:
+            if node_order == 1:
+                order = range(num_nodes)
+                random.shuffle(order)
+            elif node_order == 2:
+                order = sorted(range(num_nodes), key=lambda i: hier_scores[i])
+            elif node_order == 3:
+                order = sorted(range(num_nodes), key=lambda i: hier_scores[i], reverse=True)
+            elif node_order == 4:
+                order = sorted(range(num_nodes), key=lambda i: sum(adj_mat[i]))
+            elif node_order == 5:
+                order = sorted(range(num_nodes), key=lambda i: sum(adj_mat[i]), reverse=True)
             hier_scores = [hier_scores[i] for i in order]
             adj_mat = [[adj_mat[i][j] for j in order] for i in order]
             descriptions = [descriptions[i] for i in order]

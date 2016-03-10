@@ -24,7 +24,8 @@ if __name__=="__main__":
                         type=int,
                         required=True)
     parser.add_argument("-o", "--node-order",
-                        help="Node order (0=default, 1=random, 2=?)",
+                        help="Node order (0=default, 1=random, 2=score asc., 3=score desc., " +
+                             "4=degree asc., 5=degree desc.)",
                         type=int,
                         default=0)
     parser.add_argument("-r", "--reduce-nodes",
