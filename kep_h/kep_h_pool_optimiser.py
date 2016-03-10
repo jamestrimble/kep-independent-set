@@ -166,7 +166,7 @@ class PoolOptimiser(object):
 
         if invert_edges:
             print "p edge {} {}".format(num_nodes,
-                sum(sum(not b for b in row) for row in adj_mat) / 2)
+                (num_nodes*num_nodes - num_nodes) / 2 - sum(sum(row) for row in adj_mat) / 2)
         else:
             print "p edge {} {}".format(num_nodes, sum(sum(row) for row in adj_mat) / 2)
 
