@@ -16,6 +16,7 @@ def get_criterion(name):
     if name=="weight":    return MaxWeight()
     if name=="3way":      return MinThreeWay()
     if name=="inverse3way":      return MaxInverseThreeWay()
+    if name=="null":      return MaxNull()
     raise OptimisationException(
             "Unrecognised optimality criterion: {}".format(name))
 
@@ -116,6 +117,18 @@ class MaxWeight(OptCriterion):
 
     def cycle_val(self, cycle):
         return cycle.weight(self.weight_fun)
+
+    def altruist_val(self, altruist):
+        return 0
+
+class MaxNull(OptCriterion):
+    sense = 'MAX'
+
+    def chain_val(self, chain):
+        return 0
+
+    def cycle_val(self, cycle):
+        return 0
 
     def altruist_val(self, altruist):
         return 0
