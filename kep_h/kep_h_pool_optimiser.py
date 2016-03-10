@@ -148,9 +148,10 @@ class PoolOptimiser(object):
             for key, val in d.iteritems():
                 self.add_clique(adj_mat, val)
 
-#        print "c Adjacency matrix"
-#        for row in adj_mat:
-#            print "c " + " ".join("X" if x else "." for x in row)
+        if num_nodes < 30:
+            print "c Adjacency matrix"
+            for row in adj_mat:
+                print "c " + " ".join("X" if x else "." for x in row)
 
         if reduce_nodes:
             old_num_nodes = None
