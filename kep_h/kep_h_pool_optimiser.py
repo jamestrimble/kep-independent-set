@@ -1,4 +1,5 @@
 import sys
+import random
 
 class OptimisationException(Exception):
     pass
@@ -90,7 +91,9 @@ class PoolOptimiser(object):
 
         return len(nodes_to_keep), reduced_hier_scores, reduced_adj_mat, reduced_descriptions
 
-    def solve(self, invert_edges, reduce_nodes):
+    def solve(self, invert_edges, reduce_nodes, node_order):
+        # param node_order: 0=unchanged, 1=random, 2=?
+        
         patients = self.pool.patients
         paired_donors = self.pool.paired_donors
         altruists = self.pool.altruists
@@ -148,11 +151,6 @@ class PoolOptimiser(object):
             for key, val in d.iteritems():
                 self.add_clique(adj_mat, val)
 
-        if num_nodes < 30:
-            print "c Adjacency matrix"
-            for row in adj_mat:
-                print "c " + " ".join("X" if x else "." for x in row)
-
         if reduce_nodes:
             old_num_nodes = None
             while old_num_nodes is None or old_num_nodes > num_nodes:
@@ -161,6 +159,17 @@ class PoolOptimiser(object):
                 num_nodes, hier_scores, adj_mat, descriptions = self.reduce_instance(
                         adj_mat, hier_scores, descriptions)
                 
+        if node_order == 1:
+            order = range(num_nodes)
+            random.shuffle(order)
+            hier_scores = [hier_scores[i] for i in order]
+            adj_mat = [[adj_mat[i][j] for j in order] for i in order]
+            descriptions = [descriptions[i] for i in order]
+
+        if num_nodes < 30:
+            print "c Adjacency matrix"
+            for row in adj_mat:
+                print "c " + " ".join("X" if x else "." for x in row)
 
         for i, desc in enumerate(descriptions):
             print "c {} {}".format(i+1, desc)
