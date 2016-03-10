@@ -23,10 +23,9 @@ if __name__=="__main__":
                         help="Maximum chain length",
                         type=int,
                         required=True)
-    parser.add_argument("-m", "--max",
-                        help="Stop after finding this number of solutions",
-                        type=int,
-                        default=100) 
+    parser.add_argument("-r", "--reduce-nodes",
+                        help="Remove some nodes that can't be part of a solution",
+                        action='store_true') 
     parser.add_argument("-i", "--invert-edges",
                         help="Create complement graph",
                         action='store_true') 
@@ -38,6 +37,6 @@ if __name__=="__main__":
         with open(args.file) as json_file:
             pool = pool_reader.read(json.load(json_file)["data"])
             pool_optimiser = PoolOptimiser(pool, opt_criteria, args.cycle, args.chain)
-            pool_optimiser.solve(args.max, args.invert_edges)
+            pool_optimiser.solve(args.invert_edges, args.reduce_nodes)
     else:
         print "Input file must be in JSON format"
