@@ -1,5 +1,6 @@
 import sys
 import random
+import optimality_criteria
 
 class OptimisationException(Exception):
     pass
@@ -21,34 +22,15 @@ class PoolOptimiser(object):
                 adj_mat[x][y] = True
                 adj_mat[y][x] = True
 
-    def calc_hier_chain_score(self, chain):
+    def calc_hier_score(self, item, bit_shifts, score_accessor):
         val = 0
-        for oc in self.opt_criteria:
-            val <<= 10
-            if oc.sense == 'MAX':
-                val += min(10, int(oc.chain_val(chain)))
+        for oc, bit_shift in zip(self.opt_criteria, bit_shifts):
+            assert oc.sense == 'MAX'
+            if isinstance(oc, optimality_criteria.MaxWeight):
+                val += int(round(score_accessor(oc, item) * 100000))
             else:
-                val += 1023 - int(oc.chain_val(chain))
-        return val
-
-    def calc_hier_cycle_score(self, cycle):
-        val = 0
-        for oc in self.opt_criteria:
-            val <<= 10
-            if oc.sense == 'MAX':
-                val += min(10, int(oc.cycle_val(cycle)))
-            else:
-                val += 1023 - int(oc.cycle_val(cycle))
-        return val
-
-    def calc_hier_ndd_score(self, ndd):
-        val = 0
-        for oc in self.opt_criteria:
-            val <<= 10
-            if oc.sense == 'MAX':
-                val += min(10, int(oc.altruist_val(ndd)))
-            else:
-                val += 1023 - int(oc.altruist_val(ndd))
+                val += int(score_accessor(oc, item))
+            val <<= bit_shift
         return val
 
     def are_adj_mat_rows_almost_equal(self, row1, row2, i, j):
@@ -91,7 +73,7 @@ class PoolOptimiser(object):
 
         return len(nodes_to_keep), reduced_hier_scores, reduced_adj_mat, reduced_descriptions
 
-    def solve(self, invert_edges, reduce_nodes, node_order):
+    def solve(self, invert_edges, reduce_nodes, node_order, bit_shifts):
         # param node_order: 0=default, 1=random, 2=score ascending, 3=score descending
         #                   4=degree asc., 5=degree desc.
         
@@ -127,7 +109,8 @@ class PoolOptimiser(object):
                 patient_to_nodes[pd_pair.patient].append(node_id)
                 paired_donor_to_node[pd_pair.donor].append(node_id)
             ndd_to_node[c.altruist_edge.altruist].append(node_id)
-            hier_scores[node_id] = self.calc_hier_chain_score(c)
+            hier_scores[node_id] = self.calc_hier_score(
+                    c, bit_shifts, lambda oc, c: oc.chain_val(c))
             descriptions.append("{} {}".format(
                     c.altruist_edge.altruist.nhs_id,
                     " ".join("({},{})".format(pd_pair.patient.nhs_id, pd_pair.donor.nhs_id)
@@ -137,13 +120,15 @@ class PoolOptimiser(object):
             for pd_pair in c.pd_pairs:
                 patient_to_nodes[pd_pair.patient].append(node_id)
                 paired_donor_to_node[pd_pair.donor].append(node_id)
-            hier_scores[node_id] = self.calc_hier_cycle_score(c)
+            hier_scores[node_id] = self.calc_hier_score(
+                    c, bit_shifts, lambda oc, c: oc.cycle_val(c))
             descriptions.append(" ".join("({},{})".format(
                     pd_pair.patient.nhs_id, pd_pair.donor.nhs_id) for pd_pair in c.pd_pairs))
 
         for ndd, node_id in zip(altruists, unused_ndd_node_ids):
             ndd_to_node[ndd].append(node_id)
-            hier_scores[node_id] = self.calc_hier_ndd_score(ndd)
+            hier_scores[node_id] = self.calc_hier_score(
+                    ndd, bit_shifts, lambda oc, ndd: oc.altruist_val(ndd))
             descriptions.append(str(ndd.nhs_id))
 
         adj_mat = [[False]*num_nodes for i in range(num_nodes)]
