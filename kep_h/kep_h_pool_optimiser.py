@@ -77,6 +77,10 @@ class PoolOptimiser(object):
         # param node_order: 0=default, 1=random, 2=score ascending, 3=score descending
         #                   4=degree asc., 5=degree desc.
         
+        print "c Node order {}".format(node_order)
+        print "c Bit shifts {}".format(":".join(str(s) for s in bit_shifts[:-1]))
+        print "c Reduce number of nodes? {}".format(reduce_nodes)
+
         patients = self.pool.patients
         paired_donors = self.pool.paired_donors
         altruists = self.pool.altruists
